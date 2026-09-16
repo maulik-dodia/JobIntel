@@ -12,8 +12,9 @@ class JobApplicationTypeConverters {
     fun stringToLocalDate(value: String?): LocalDate? = value?.let(LocalDate::parse)
 
     @TypeConverter
-    fun applicationStatusToString(value: ApplicationStatus): String = value.name
+    fun applicationStatusToString(value: ApplicationStatus): String = value.dbValue
 
     @TypeConverter
-    fun stringToApplicationStatus(value: String): ApplicationStatus = ApplicationStatus.valueOf(value)
+    fun stringToApplicationStatus(value: String): ApplicationStatus =
+        ApplicationStatus.fromDbValue(value)
 }
