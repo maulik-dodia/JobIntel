@@ -10,4 +10,6 @@ import androidx.room.TypeConverters
     exportSchema = false,
 )
 @TypeConverters(JobApplicationTypeConverters::class)
-abstract class JobIntelDatabase : RoomDatabase()
+abstract class JobIntelDatabase : RoomDatabase() {
+    abstract fun jobApplicationDao(): JobApplicationDao
+}
