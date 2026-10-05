@@ -2,9 +2,10 @@ package com.jobintel.data.repository
 
 import com.jobintel.data.local.JobApplicationDao
 import com.jobintel.data.local.JobApplicationEntity
+import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 
-class JobApplicationRepositoryImpl(
+class JobApplicationRepositoryImpl @Inject constructor(
     private val jobApplicationDao: JobApplicationDao,
 ) : JobApplicationRepository {
     override fun observeAll(): Flow<List<JobApplicationEntity>> = jobApplicationDao.observeAll()
