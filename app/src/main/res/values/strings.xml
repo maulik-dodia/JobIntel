@@ -1,3 +1,6 @@
 <resources>
     <string name="app_name">JobIntel</string>
+    <string name="job_applications_title">Job applications</string>
+    <string name="job_applications_empty">No job applications yet</string>
+    <string name="job_application_country_unknown">—</string>
 </resources>
