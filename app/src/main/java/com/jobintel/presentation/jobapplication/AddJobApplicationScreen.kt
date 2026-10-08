@@ -17,6 +17,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -27,17 +28,24 @@ import com.jobintel.R
 import com.jobintel.data.local.JobApplicationEntity
 import com.jobintel.domain.model.ApplicationStatus
 import com.jobintel.ui.theme.JobIntelTheme
+import kotlinx.coroutines.launch
 import java.time.LocalDate
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddJobApplicationScreen(
     modifier: Modifier = Modifier,
-    onSave: (JobApplicationEntity) -> Unit,
-    onCancel: () -> Unit,
+    onSave: suspend (JobApplicationEntity) -> Boolean,
+    onCancel: () -> Unit
 ) {
     BackHandler {
         onCancel()
+    }
+
+    val coroutineScope = rememberCoroutineScope()
+
+    var isSaving by rememberSaveable {
+        mutableStateOf(false)
     }
 
     var companyName by rememberSaveable {
@@ -60,11 +68,11 @@ fun AddJobApplicationScreen(
                     Text(
                         text = stringResource(
                             R.string.add_job_application,
-                        ),
+                        )
                     )
-                },
+                }
             )
-        },
+        }
     ) { innerPadding ->
 
         Column(
@@ -73,7 +81,7 @@ fun AddJobApplicationScreen(
                 .padding(innerPadding)
                 .padding(16.dp)
                 .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
 
             OutlinedTextField(
@@ -87,7 +95,7 @@ fun AddJobApplicationScreen(
                         ),
                     )
                 },
-                singleLine = true,
+                singleLine = true
             )
 
             OutlinedTextField(
@@ -101,7 +109,7 @@ fun AddJobApplicationScreen(
                         )
                     )
                 },
-                singleLine = true,
+                singleLine = true
             )
 
             OutlinedTextField(
@@ -111,15 +119,16 @@ fun AddJobApplicationScreen(
                 label = {
                     Text(
                         text = stringResource(
-                            R.string.country,
+                            R.string.country
                         )
                     )
                 },
-                singleLine = true,
+                singleLine = true
             )
 
             Button(
                 onClick = {
+                    isSaving = true
                     val jobApplication = JobApplicationEntity(
                         companyName = companyName.trim(),
                         jobTitle = jobTitle.trim(),
@@ -127,29 +136,30 @@ fun AddJobApplicationScreen(
                         country = country.trim().ifBlank { null },
                         status = ApplicationStatus.APPLIED,
                         createdAt = System.currentTimeMillis(),
-                        updatedAt = System.currentTimeMillis(),
+                        updatedAt = System.currentTimeMillis()
                     )
-
-                    onSave(jobApplication)
+                    coroutineScope.launch {
+                        val saved = onSave(jobApplication)
+                        if (!saved) {
+                            isSaving = false
+                        }
+                    }
                 },
                 modifier = Modifier.fillMaxWidth(),
-                enabled = companyName.isNotBlank() &&
-                        jobTitle.isNotBlank(),
+                enabled = !isSaving &&
+                        companyName.isNotBlank() &&
+                        jobTitle.isNotBlank()
             ) {
-                Text(
-                    text = stringResource(
-                        R.string.save,
-                    )
-                )
+                Text(text = stringResource(R.string.save))
             }
 
             Button(
                 onClick = onCancel,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
                     text = stringResource(
-                        R.string.cancel,
+                        R.string.cancel
                     )
                 )
             }
@@ -162,8 +172,8 @@ fun AddJobApplicationScreen(
 private fun AddJobApplicationScreenPreview() {
     JobIntelTheme {
         AddJobApplicationScreen(
-            onSave = {},
-            onCancel = {},
+            onSave = { true },
+            onCancel = {}
         )
     }
 }
