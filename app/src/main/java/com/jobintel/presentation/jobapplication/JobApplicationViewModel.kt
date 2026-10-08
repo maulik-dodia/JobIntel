@@ -8,7 +8,6 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
@@ -23,8 +22,10 @@ class JobApplicationViewModel @Inject constructor(
             initialValue = emptyList(),
         )
 
-    fun addJobApplication(jobApplication: JobApplicationEntity) {
-        viewModelScope.launch {
+    suspend fun addJobApplication(
+        jobApplication: JobApplicationEntity,
+    ): Result<Long> {
+        return runCatching {
             jobApplicationRepository.insert(jobApplication)
         }
     }
