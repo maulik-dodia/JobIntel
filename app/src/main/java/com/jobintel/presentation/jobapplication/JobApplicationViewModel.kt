@@ -12,7 +12,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class JobApplicationViewModel @Inject constructor(
-    jobApplicationRepository: JobApplicationRepository,
+    private val jobApplicationRepository: JobApplicationRepository,
 ) : ViewModel() {
 
     val jobApplications: StateFlow<List<JobApplicationEntity>> =
@@ -21,4 +21,12 @@ class JobApplicationViewModel @Inject constructor(
             started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
             initialValue = emptyList(),
         )
+
+    suspend fun addJobApplication(
+        jobApplication: JobApplicationEntity,
+    ): Result<Long> {
+        return runCatching {
+            jobApplicationRepository.insert(jobApplication)
+        }
+    }
 }
