@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -34,11 +35,14 @@ import java.time.LocalDate
 fun JobApplicationScreen(
     modifier: Modifier = Modifier,
     viewModel: JobApplicationViewModel = viewModel(),
+    onAddJobApplication: () -> Unit,
 ) {
     val jobApplications by viewModel.jobApplications.collectAsStateWithLifecycle()
+
     JobApplicationScreenContent(
         jobApplications = jobApplications,
         modifier = modifier,
+        onAddJobApplication = onAddJobApplication,
     )
 }
 
@@ -47,17 +51,31 @@ fun JobApplicationScreen(
 fun JobApplicationScreenContent(
     jobApplications: List<JobApplicationEntity>,
     modifier: Modifier = Modifier,
+    onAddJobApplication: () -> Unit,
 ) {
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
             TopAppBar(
-                title = { Text(text = stringResource(R.string.job_applications_title)) },
+                title = {
+                    Text(
+                        text = stringResource(R.string.job_applications_title),
+                    )
+                },
             )
+        },
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = onAddJobApplication,
+            ) {
+                Text(text = "+")
+            }
         },
     ) { innerPadding ->
         if (jobApplications.isEmpty()) {
-            JobApplicationEmptyState(modifier = Modifier.padding(innerPadding))
+            JobApplicationEmptyState(
+                modifier = Modifier.padding(innerPadding),
+            )
         } else {
             LazyColumn(
                 modifier = Modifier
@@ -127,7 +145,10 @@ fun JobApplicationEmptyState(
 @Composable
 private fun JobApplicationScreenContentEmptyPreview() {
     JobIntelTheme {
-        JobApplicationScreenContent(jobApplications = emptyList())
+        JobApplicationScreenContent(
+            jobApplications = emptyList(),
+            onAddJobApplication = {}
+        )
     }
 }
 
@@ -135,7 +156,10 @@ private fun JobApplicationScreenContentEmptyPreview() {
 @Composable
 private fun JobApplicationScreenContentPreview() {
     JobIntelTheme {
-        JobApplicationScreenContent(jobApplications = previewJobApplications)
+        JobApplicationScreenContent(
+            jobApplications = previewJobApplications,
+            onAddJobApplication = {}
+        )
     }
 }
 

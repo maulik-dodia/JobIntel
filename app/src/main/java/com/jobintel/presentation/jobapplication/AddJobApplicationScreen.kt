@@ -1,0 +1,161 @@
+package com.jobintel.presentation.jobapplication
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
+import com.jobintel.R
+import com.jobintel.data.local.JobApplicationEntity
+import com.jobintel.domain.model.ApplicationStatus
+import com.jobintel.ui.theme.JobIntelTheme
+import java.time.LocalDate
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AddJobApplicationScreen(
+    modifier: Modifier = Modifier,
+    onSave: (JobApplicationEntity) -> Unit,
+    onCancel: () -> Unit,
+) {
+    var companyName by remember {
+        mutableStateOf("")
+    }
+
+    var jobTitle by remember {
+        mutableStateOf("")
+    }
+
+    var country by remember {
+        mutableStateOf("")
+    }
+
+    Scaffold(
+        modifier = modifier.fillMaxSize(),
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = stringResource(
+                            R.string.add_job_application,
+                        ),
+                    )
+                },
+            )
+        },
+    ) { innerPadding ->
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+
+            OutlinedTextField(
+                value = companyName,
+                onValueChange = { companyName = it },
+                modifier = Modifier.fillMaxWidth(),
+                label = {
+                    Text(
+                        text = stringResource(
+                            R.string.company_name,
+                        ),
+                    )
+                },
+                singleLine = true,
+            )
+
+            OutlinedTextField(
+                value = jobTitle,
+                onValueChange = { jobTitle = it },
+                modifier = Modifier.fillMaxWidth(),
+                label = {
+                    Text(
+                        text = stringResource(
+                            R.string.job_title,
+                        )
+                    )
+                },
+                singleLine = true,
+            )
+
+            OutlinedTextField(
+                value = country,
+                onValueChange = { country = it },
+                modifier = Modifier.fillMaxWidth(),
+                label = {
+                    Text(
+                        text = stringResource(
+                            R.string.country,
+                        )
+                    )
+                },
+                singleLine = true,
+            )
+
+            Button(
+                onClick = {
+                    val jobApplication = JobApplicationEntity(
+                        companyName = companyName.trim(),
+                        jobTitle = jobTitle.trim(),
+                        dateApplied = LocalDate.now(),
+                        country = country.trim().ifBlank { null },
+                        status = ApplicationStatus.APPLIED,
+                        createdAt = System.currentTimeMillis(),
+                        updatedAt = System.currentTimeMillis(),
+                    )
+
+                    onSave(jobApplication)
+                },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = companyName.isNotBlank() &&
+                        jobTitle.isNotBlank(),
+            ) {
+                Text(
+                    text = stringResource(
+                        R.string.save,
+                    )
+                )
+            }
+
+            Button(
+                onClick = onCancel,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(
+                    text = stringResource(
+                        R.string.cancel,
+                    )
+                )
+            }
+        }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun AddJobApplicationScreenPreview() {
+    JobIntelTheme {
+        AddJobApplicationScreen(
+            onSave = {},
+            onCancel = {},
+        )
+    }
+}

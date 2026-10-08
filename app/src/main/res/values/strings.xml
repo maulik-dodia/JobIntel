@@ -3,4 +3,13 @@
     <string name="job_applications_title">Job applications</string>
     <string name="job_applications_empty">No job applications yet</string>
     <string name="job_application_country_unknown">—</string>
+
+    <string name="add_job_application">Add job application</string>
+    <string name="company_name">Company</string>
+    <string name="job_title">Job title</string>
+    <string name="country">Country</string>
+    <string name="date_applied">Date applied</string>
+    <string name="status">Status</string>
+    <string name="save">Save</string>
+    <string name="cancel">Cancel</string>
 </resources>
