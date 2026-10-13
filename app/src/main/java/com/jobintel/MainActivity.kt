@@ -6,11 +6,10 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.jobintel.data.local.JobApplicationEntity
 import com.jobintel.presentation.jobapplication.AddJobApplicationScreen
 import com.jobintel.presentation.jobapplication.JobApplicationScreen
 import com.jobintel.presentation.jobapplication.JobApplicationViewModel
@@ -28,40 +27,53 @@ class MainActivity : ComponentActivity() {
                 var showAddJobApplication by rememberSaveable {
                     mutableStateOf(false)
                 }
-                var selectedJobApplication by remember {
-                    mutableStateOf<JobApplicationEntity?>(null)
+                var isEditingJobApplication by rememberSaveable {
+                    mutableStateOf(false)
                 }
-                if (showAddJobApplication || selectedJobApplication != null) {
+                var selectedJobApplicationId by rememberSaveable {
+
+                    mutableStateOf<Long?>(null)
+                }
+                val jobApplications by viewModel.jobApplications.collectAsStateWithLifecycle()
+                val selectedJobApplication = jobApplications.firstOrNull {
+                    it.id == selectedJobApplicationId
+                }
+                if (showAddJobApplication || isEditingJobApplication) {
                     AddJobApplicationScreen(
                         initialJobApplication = selectedJobApplication,
                         onSave = { jobApplication ->
-                            //val result = viewModel.addJobApplication(jobApplication)
-                            val result = if (selectedJobApplication == null) {
-                                viewModel.addJobApplication(jobApplication)
+                            val result = if (isEditingJobApplication) {
+                                selectedJobApplication?.let {
+                                    viewModel.updateJobApplication(jobApplication)
+                                } ?: return@AddJobApplicationScreen false
                             } else {
-                                viewModel.updateJobApplication(jobApplication)
+                                viewModel.addJobApplication(jobApplication)
                             }
                             if (result.isSuccess) {
                                 showAddJobApplication = false
-                                selectedJobApplication = null
+                                isEditingJobApplication = false
+                                selectedJobApplicationId = null
                             }
                             result.isSuccess
                         },
                         onCancel = {
                             showAddJobApplication = false
-                            selectedJobApplication = null
+                            isEditingJobApplication = false
+                            selectedJobApplicationId = null
                         }
                     )
                 } else {
                     JobApplicationScreen(
                         viewModel = viewModel,
                         onAddJobApplication = {
-                            selectedJobApplication = null
+                            selectedJobApplicationId = null
+                            isEditingJobApplication = false
                             showAddJobApplication = true
                         },
                         onEditJobApplication = { jobApplication ->
                             showAddJobApplication =  false
-                            selectedJobApplication = jobApplication
+                            isEditingJobApplication = true
+                            selectedJobApplicationId = jobApplication.id
                         }
                     )
                 }
