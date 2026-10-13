@@ -4,10 +4,17 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.jobintel.presentation.jobapplication.AddJobApplicationScreen
@@ -34,21 +41,19 @@ class MainActivity : ComponentActivity() {
 
                     mutableStateOf<Long?>(null)
                 }
-                val jobApplications by viewModel.jobApplications.collectAsStateWithLifecycle()
+                val loadedJobApplications by
+                viewModel.jobApplicationsWithLoading.collectAsStateWithLifecycle()
+
+                val jobApplications = loadedJobApplications.orEmpty()
+                val hasLoadedJobApplications = loadedJobApplications != null
+
                 val selectedJobApplication = jobApplications.firstOrNull {
                     it.id == selectedJobApplicationId
                 }
-                if (showAddJobApplication || isEditingJobApplication) {
+                if (showAddJobApplication) {
                     AddJobApplicationScreen(
-                        initialJobApplication = selectedJobApplication,
                         onSave = { jobApplication ->
-                            val result = if (isEditingJobApplication) {
-                                selectedJobApplication?.let {
-                                    viewModel.updateJobApplication(jobApplication)
-                                } ?: return@AddJobApplicationScreen false
-                            } else {
-                                viewModel.addJobApplication(jobApplication)
-                            }
+                            val result = viewModel.addJobApplication(jobApplication)
                             if (result.isSuccess) {
                                 showAddJobApplication = false
                                 isEditingJobApplication = false
@@ -62,6 +67,41 @@ class MainActivity : ComponentActivity() {
                             selectedJobApplicationId = null
                         }
                     )
+                } else if (isEditingJobApplication) {
+                    when {
+                        selectedJobApplication != null -> {
+                            AddJobApplicationScreen(
+                                initialJobApplication = selectedJobApplication,
+                                onSave = { jobApplication ->
+                                    val result =
+                                        viewModel.updateJobApplication(jobApplication)
+                                    if (result.isSuccess) {
+                                        showAddJobApplication = false
+                                        isEditingJobApplication = false
+                                        selectedJobApplicationId = null
+                                    }
+                                    result.isSuccess
+                                },
+                                onCancel = {
+                                    showAddJobApplication = false
+                                    isEditingJobApplication = false
+                                    selectedJobApplicationId = null
+                                }
+                            )
+                        }
+
+                        !hasLoadedJobApplications -> {
+                            JobApplicationLoadingIndicator()
+                        }
+
+                        else -> {
+                            LaunchedEffect(selectedJobApplicationId) {
+                                isEditingJobApplication = false
+                                selectedJobApplicationId = null
+                            }
+                            JobApplicationLoadingIndicator()
+                        }
+                    }
                 } else {
                     JobApplicationScreen(
                         viewModel = viewModel,
@@ -71,13 +111,23 @@ class MainActivity : ComponentActivity() {
                             showAddJobApplication = true
                         },
                         onEditJobApplication = { jobApplication ->
-                            showAddJobApplication =  false
+                            showAddJobApplication = false
                             isEditingJobApplication = true
                             selectedJobApplicationId = jobApplication.id
-                        }
+                        },
                     )
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun JobApplicationLoadingIndicator() {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        CircularProgressIndicator()
     }
 }

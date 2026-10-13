@@ -7,6 +7,7 @@ import com.jobintel.data.repository.JobApplicationRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 
@@ -15,12 +16,23 @@ class JobApplicationViewModel @Inject constructor(
     private val jobApplicationRepository: JobApplicationRepository,
 ) : ViewModel() {
 
-    val jobApplications: StateFlow<List<JobApplicationEntity>> =
+    private val jobApplicationsState: StateFlow<List<JobApplicationEntity>?> =
         jobApplicationRepository.observeAll().stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
-            initialValue = emptyList(),
+            initialValue = null
         )
+    val jobApplicationsWithLoading: StateFlow<List<JobApplicationEntity>?> =
+        jobApplicationsState
+
+    val jobApplications: StateFlow<List<JobApplicationEntity>> =
+        jobApplicationsState
+            .map { it.orEmpty() }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
+                initialValue = emptyList()
+            )
 
     suspend fun addJobApplication(
         jobApplication: JobApplicationEntity
