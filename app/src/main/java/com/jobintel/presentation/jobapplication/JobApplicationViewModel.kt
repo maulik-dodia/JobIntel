@@ -23,10 +23,18 @@ class JobApplicationViewModel @Inject constructor(
         )
 
     suspend fun addJobApplication(
-        jobApplication: JobApplicationEntity,
+        jobApplication: JobApplicationEntity
     ): Result<Long> {
         return runCatching {
             jobApplicationRepository.insert(jobApplication)
+        }
+    }
+
+    suspend fun updateJobApplication(
+        jobApplication: JobApplicationEntity
+    ): Result<Unit> {
+        return runCatching {
+            jobApplicationRepository.update(jobApplication)
         }
     }
 }

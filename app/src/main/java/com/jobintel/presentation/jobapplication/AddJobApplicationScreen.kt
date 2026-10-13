@@ -35,6 +35,7 @@ import java.time.LocalDate
 @Composable
 fun AddJobApplicationScreen(
     modifier: Modifier = Modifier,
+    initialJobApplication: JobApplicationEntity? = null,
     onSave: suspend (JobApplicationEntity) -> Boolean,
     onCancel: () -> Unit
 ) {
@@ -48,16 +49,16 @@ fun AddJobApplicationScreen(
         mutableStateOf(false)
     }
 
-    var companyName by rememberSaveable {
-        mutableStateOf("")
+    var companyName by rememberSaveable(initialJobApplication?.id) {
+        mutableStateOf(initialJobApplication?.companyName.orEmpty())
     }
 
-    var jobTitle by rememberSaveable {
-        mutableStateOf("")
+    var jobTitle by rememberSaveable(initialJobApplication?.id) {
+        mutableStateOf(initialJobApplication?.jobTitle.orEmpty())
     }
 
-    var country by rememberSaveable {
-        mutableStateOf("")
+    var country by rememberSaveable(initialJobApplication?.id) {
+        mutableStateOf(initialJobApplication?.country.orEmpty())
     }
 
     Scaffold(
@@ -67,7 +68,11 @@ fun AddJobApplicationScreen(
                 title = {
                     Text(
                         text = stringResource(
-                            R.string.add_job_application,
+                            if (initialJobApplication == null) {
+                                R.string.add_job_application
+                            } else {
+                                R.string.edit_job_application
+                            }
                         )
                     )
                 }
@@ -129,14 +134,20 @@ fun AddJobApplicationScreen(
             Button(
                 onClick = {
                     isSaving = true
+                    val now = System.currentTimeMillis()
                     val jobApplication = JobApplicationEntity(
+                        id = initialJobApplication?.id ?: 0L,
                         companyName = companyName.trim(),
                         jobTitle = jobTitle.trim(),
-                        dateApplied = LocalDate.now(),
+                        dateApplied = if (initialJobApplication != null) {
+                            initialJobApplication.dateApplied
+                        } else {
+                            LocalDate.now()
+                        },
                         country = country.trim().ifBlank { null },
-                        status = ApplicationStatus.APPLIED,
-                        createdAt = System.currentTimeMillis(),
-                        updatedAt = System.currentTimeMillis()
+                        status = initialJobApplication?.status ?: ApplicationStatus.APPLIED,
+                        createdAt = initialJobApplication?.createdAt ?: now,
+                        updatedAt = now
                     )
                     coroutineScope.launch {
                         val saved = onSave(jobApplication)

@@ -5,6 +5,7 @@
     <string name="job_application_country_unknown">—</string>
 
     <string name="add_job_application">Add job application</string>
+    <string name="edit_job_application">Edit job application</string>
     <string name="company_name">Company</string>
     <string name="job_title">Job title</string>
     <string name="country">Country</string>

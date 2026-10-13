@@ -36,6 +36,7 @@ fun JobApplicationScreen(
     modifier: Modifier = Modifier,
     viewModel: JobApplicationViewModel = viewModel(),
     onAddJobApplication: () -> Unit,
+    onEditJobApplication: (JobApplicationEntity) -> Unit
 ) {
     val jobApplications by viewModel.jobApplications.collectAsStateWithLifecycle()
 
@@ -43,6 +44,7 @@ fun JobApplicationScreen(
         jobApplications = jobApplications,
         modifier = modifier,
         onAddJobApplication = onAddJobApplication,
+        onEditJobApplication = onEditJobApplication
     )
 }
 
@@ -52,6 +54,7 @@ fun JobApplicationScreenContent(
     jobApplications: List<JobApplicationEntity>,
     modifier: Modifier = Modifier,
     onAddJobApplication: () -> Unit,
+    onEditJobApplication: (JobApplicationEntity) -> Unit
 ) {
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -88,7 +91,10 @@ fun JobApplicationScreenContent(
                     items = jobApplications,
                     key = { it.id },
                 ) { jobApplication ->
-                    JobApplicationItem(jobApplication = jobApplication)
+                    JobApplicationItem(
+                        jobApplication = jobApplication,
+                        onClick = { onEditJobApplication(jobApplication) }
+                    )
                 }
             }
         }
@@ -99,8 +105,12 @@ fun JobApplicationScreenContent(
 fun JobApplicationItem(
     jobApplication: JobApplicationEntity,
     modifier: Modifier = Modifier,
+    onClick: () -> Unit
 ) {
-    Card(modifier = modifier.fillMaxWidth()) {
+    Card(
+        onClick = onClick,
+        modifier = modifier.fillMaxWidth()
+    ) {
         Column(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -147,7 +157,8 @@ private fun JobApplicationScreenContentEmptyPreview() {
     JobIntelTheme {
         JobApplicationScreenContent(
             jobApplications = emptyList(),
-            onAddJobApplication = {}
+            onAddJobApplication = {},
+            onEditJobApplication = {}
         )
     }
 }
@@ -158,7 +169,8 @@ private fun JobApplicationScreenContentPreview() {
     JobIntelTheme {
         JobApplicationScreenContent(
             jobApplications = previewJobApplications,
-            onAddJobApplication = {}
+            onAddJobApplication = {},
+            onEditJobApplication = {}
         )
     }
 }
@@ -167,7 +179,10 @@ private fun JobApplicationScreenContentPreview() {
 @Composable
 private fun JobApplicationItemPreview() {
     JobIntelTheme {
-        JobApplicationItem(jobApplication = previewJobApplications.first())
+        JobApplicationItem(
+            jobApplication = previewJobApplications.first(),
+            onClick = {}
+        )
     }
 }
 
