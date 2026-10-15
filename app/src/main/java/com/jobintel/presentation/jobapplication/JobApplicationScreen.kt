@@ -22,7 +22,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -36,7 +35,6 @@ import com.jobintel.R
 import com.jobintel.data.local.JobApplicationEntity
 import com.jobintel.domain.model.ApplicationStatus
 import com.jobintel.ui.theme.JobIntelTheme
-import kotlinx.coroutines.launch
 import java.time.LocalDate
 
 @Composable
@@ -45,50 +43,53 @@ fun JobApplicationScreen(
     viewModel: JobApplicationViewModel = viewModel(),
     onAddJobApplication: () -> Unit,
     onEditJobApplication: (JobApplicationEntity) -> Unit,
-    onDeleteJobApplication: suspend (JobApplicationEntity) -> Boolean
+    onDeleteJobApplication: (JobApplicationEntity) -> Unit
 ) {
     val jobApplications by viewModel.jobApplications.collectAsStateWithLifecycle()
+    val deleteState by viewModel.deleteState.collectAsStateWithLifecycle()
 
     JobApplicationScreenContent(
         jobApplications = jobApplications,
+        deleteState = deleteState,
         modifier = modifier,
         onAddJobApplication = onAddJobApplication,
         onEditJobApplication = onEditJobApplication,
-        onDeleteJobApplication = onDeleteJobApplication
+        onDeleteJobApplication = onDeleteJobApplication,
+        onResetDeleteState = viewModel::resetDeleteState
     )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun JobApplicationScreenContent(
-    jobApplications: List<JobApplicationEntity>,
     modifier: Modifier = Modifier,
+    jobApplications: List<JobApplicationEntity>,
+    deleteState: DeleteJobApplicationState = DeleteJobApplicationState.Idle,
     onAddJobApplication: () -> Unit,
     onEditJobApplication: (JobApplicationEntity) -> Unit,
-    onDeleteJobApplication: suspend (JobApplicationEntity) -> Boolean
+    onDeleteJobApplication: (JobApplicationEntity) -> Unit,
+    onResetDeleteState: () -> Unit
 ) {
     var jobApplicationToDeleteId by rememberSaveable {
         mutableStateOf<Long?>(null)
     }
-    var isDeleting by rememberSaveable {
-        mutableStateOf(false)
-    }
-    var deleteError by rememberSaveable {
-        mutableStateOf(false)
-    }
     val jobApplicationToDelete = jobApplications.firstOrNull {
         it.id == jobApplicationToDeleteId
     }
-    val coroutineScope = rememberCoroutineScope()
+    val isDeleting = deleteState == DeleteJobApplicationState.Deleting
+    val deleteError = deleteState == DeleteJobApplicationState.Error
 
-    LaunchedEffect(jobApplicationToDeleteId, jobApplications) {
-        if (
-            jobApplicationToDeleteId != null &&
-            jobApplications.none { it.id == jobApplicationToDeleteId } &&
-            !isDeleting
-        ) {
-            jobApplicationToDeleteId = null
-            deleteError = false
+    LaunchedEffect(deleteState) {
+        when (deleteState) {
+            DeleteJobApplicationState.Success -> {
+                jobApplicationToDeleteId = null
+                onResetDeleteState()
+            }
+            DeleteJobApplicationState.Error -> {
+                // Keep the dialog open so the user can retry.
+            }
+            DeleteJobApplicationState.Idle,
+            DeleteJobApplicationState.Deleting -> Unit
         }
     }
     Scaffold(
@@ -134,7 +135,7 @@ fun JobApplicationScreenContent(
                         TextButton(
                             onClick = {
                                 jobApplicationToDeleteId = jobApplication.id
-                                deleteError = false
+                                onResetDeleteState()
                             },
                             enabled = !isDeleting
                         ) {
@@ -150,7 +151,7 @@ fun JobApplicationScreenContent(
             onDismissRequest = {
                 if (!isDeleting) {
                     jobApplicationToDeleteId = null
-                    deleteError = false
+                    onResetDeleteState()
                 }
             },
             title = {
@@ -176,23 +177,9 @@ fun JobApplicationScreenContent(
                 TextButton(
                     enabled = !isDeleting,
                     onClick = {
-                        val application = jobApplicationToDelete ?: return@TextButton
-
-                        coroutineScope.launch {
-                            isDeleting = true
-                            deleteError = false
-
-                            try {
-                                val deleted = onDeleteJobApplication(application)
-                                if (deleted) {
-                                    jobApplicationToDeleteId = null
-                                } else {
-                                    deleteError = true
-                                }
-                            } finally {
-                                isDeleting = false
-                            }
-                        }
+                        val application = jobApplicationToDelete
+                            ?: return@TextButton
+                        onDeleteJobApplication(application)
                     }
                 ) {
                     Text(
@@ -209,7 +196,7 @@ fun JobApplicationScreenContent(
                     enabled = !isDeleting,
                     onClick = {
                         jobApplicationToDeleteId = null
-                        deleteError = false
+                        onResetDeleteState()
                     }
                 ) {
                     Text(stringResource(R.string.delete_job_application_cancel))
@@ -277,7 +264,8 @@ private fun JobApplicationScreenContentEmptyPreview() {
             jobApplications = emptyList(),
             onAddJobApplication = {},
             onEditJobApplication = {},
-            onDeleteJobApplication = { true }
+            onDeleteJobApplication = {},
+            onResetDeleteState = {}
         )
     }
 }
@@ -290,7 +278,8 @@ private fun JobApplicationScreenContentPreview() {
             jobApplications = previewJobApplications,
             onAddJobApplication = {},
             onEditJobApplication = {},
-            onDeleteJobApplication = { true }
+            onDeleteJobApplication = {},
+            onResetDeleteState = {}
         )
     }
 }
