@@ -9,15 +9,21 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -36,26 +42,56 @@ fun JobApplicationScreen(
     modifier: Modifier = Modifier,
     viewModel: JobApplicationViewModel = viewModel(),
     onAddJobApplication: () -> Unit,
-    onEditJobApplication: (JobApplicationEntity) -> Unit
+    onEditJobApplication: (JobApplicationEntity) -> Unit,
+    onDeleteJobApplication: (JobApplicationEntity) -> Unit
 ) {
     val jobApplications by viewModel.jobApplications.collectAsStateWithLifecycle()
+    val deleteState by viewModel.deleteState.collectAsStateWithLifecycle()
 
     JobApplicationScreenContent(
         jobApplications = jobApplications,
+        deleteState = deleteState,
         modifier = modifier,
         onAddJobApplication = onAddJobApplication,
-        onEditJobApplication = onEditJobApplication
+        onEditJobApplication = onEditJobApplication,
+        onDeleteJobApplication = onDeleteJobApplication,
+        onResetDeleteState = viewModel::resetDeleteState
     )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun JobApplicationScreenContent(
-    jobApplications: List<JobApplicationEntity>,
     modifier: Modifier = Modifier,
+    jobApplications: List<JobApplicationEntity>,
+    deleteState: DeleteJobApplicationState = DeleteJobApplicationState.Idle,
     onAddJobApplication: () -> Unit,
-    onEditJobApplication: (JobApplicationEntity) -> Unit
+    onEditJobApplication: (JobApplicationEntity) -> Unit,
+    onDeleteJobApplication: (JobApplicationEntity) -> Unit,
+    onResetDeleteState: () -> Unit
 ) {
+    var jobApplicationToDeleteId by rememberSaveable {
+        mutableStateOf<Long?>(null)
+    }
+    val jobApplicationToDelete = jobApplications.firstOrNull {
+        it.id == jobApplicationToDeleteId
+    }
+    val isDeleting = deleteState == DeleteJobApplicationState.Deleting
+    val deleteError = deleteState == DeleteJobApplicationState.Error
+
+    LaunchedEffect(deleteState) {
+        when (deleteState) {
+            DeleteJobApplicationState.Success -> {
+                jobApplicationToDeleteId = null
+                onResetDeleteState()
+            }
+            DeleteJobApplicationState.Error -> {
+                // Keep the dialog open so the user can retry.
+            }
+            DeleteJobApplicationState.Idle,
+            DeleteJobApplicationState.Deleting -> Unit
+        }
+    }
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
@@ -91,13 +127,82 @@ fun JobApplicationScreenContent(
                     items = jobApplications,
                     key = { it.id },
                 ) { jobApplication ->
-                    JobApplicationItem(
-                        jobApplication = jobApplication,
-                        onClick = { onEditJobApplication(jobApplication) }
-                    )
+                    Column {
+                        JobApplicationItem(
+                            jobApplication = jobApplication,
+                            onClick = { onEditJobApplication(jobApplication) }
+                        )
+                        TextButton(
+                            onClick = {
+                                jobApplicationToDeleteId = jobApplication.id
+                                onResetDeleteState()
+                            },
+                            enabled = !isDeleting
+                        ) {
+                            Text(stringResource(R.string.delete_job_application))
+                        }
+                    }
                 }
             }
         }
+    }
+    if (jobApplicationToDeleteId != null) {
+        AlertDialog(
+            onDismissRequest = {
+                if (!isDeleting) {
+                    jobApplicationToDeleteId = null
+                    onResetDeleteState()
+                }
+            },
+            title = {
+                Text(stringResource(R.string.delete_job_application_title))
+            },
+            text = {
+                Column {
+                    Text(
+                        text = stringResource(
+                            R.string.delete_job_application_confirmation,
+                            jobApplicationToDelete?.companyName.orEmpty()
+                        )
+                    )
+                    if (deleteError) {
+                        Text(
+                            text = stringResource(R.string.delete_job_application_error),
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = !isDeleting,
+                    onClick = {
+                        val application = jobApplicationToDelete
+                            ?: return@TextButton
+                        onDeleteJobApplication(application)
+                    }
+                ) {
+                    Text(
+                        if (isDeleting) {
+                            stringResource(R.string.delete_job_application_progress)
+                        } else {
+                            stringResource(R.string.delete_job_application)
+                        }
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    enabled = !isDeleting,
+                    onClick = {
+                        jobApplicationToDeleteId = null
+                        onResetDeleteState()
+                    }
+                ) {
+                    Text(stringResource(R.string.delete_job_application_cancel))
+                }
+            }
+        )
     }
 }
 
@@ -158,7 +263,9 @@ private fun JobApplicationScreenContentEmptyPreview() {
         JobApplicationScreenContent(
             jobApplications = emptyList(),
             onAddJobApplication = {},
-            onEditJobApplication = {}
+            onEditJobApplication = {},
+            onDeleteJobApplication = {},
+            onResetDeleteState = {}
         )
     }
 }
@@ -170,7 +277,9 @@ private fun JobApplicationScreenContentPreview() {
         JobApplicationScreenContent(
             jobApplications = previewJobApplications,
             onAddJobApplication = {},
-            onEditJobApplication = {}
+            onEditJobApplication = {},
+            onDeleteJobApplication = {},
+            onResetDeleteState = {}
         )
     }
 }
@@ -206,5 +315,5 @@ private val previewJobApplications = listOf(
         status = ApplicationStatus.SAVED,
         createdAt = 3_000L,
         updatedAt = 4_000L,
-    ),
+    )
 )
