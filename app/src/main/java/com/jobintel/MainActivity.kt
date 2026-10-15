@@ -114,6 +114,9 @@ class MainActivity : ComponentActivity() {
                             isEditingJobApplication = true
                             selectedJobApplicationId = jobApplication.id
                         },
+                        onDeleteJobApplication = { jobApplication ->
+                            viewModel.deleteJobApplication(jobApplication).isSuccess
+                        }
                     )
                 }
             }

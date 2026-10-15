@@ -49,4 +49,12 @@ class JobApplicationViewModel @Inject constructor(
             jobApplicationRepository.update(jobApplication)
         }
     }
+
+    suspend fun deleteJobApplication(
+        jobApplication: JobApplicationEntity
+    ): Result<Unit> {
+        return runCatching {
+            jobApplicationRepository.delete(jobApplication)
+        }
+    }
 }
