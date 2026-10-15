@@ -99,7 +99,6 @@ class MainActivity : ComponentActivity() {
                                 isEditingJobApplication = false
                                 selectedJobApplicationId = null
                             }
-                            JobApplicationLoadingIndicator()
                         }
                     }
                 } else {
